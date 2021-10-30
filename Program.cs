@@ -19,7 +19,7 @@ var github = new GitHubClient(new ProductHeaderValue("GitHubMilestoneSync", "v1.
 };
 
 foreach (var config in JsonSerializer.Deserialize<Config[]>(
-             await File.ReadAllTextAsync("config.json"),
+             await File.ReadAllTextAsync(Environment.GetEnvironmentVariable("CONFIG_FILE") ?? "config.json"),
              new JsonSerializerOptions
              {
                  PropertyNameCaseInsensitive = true
