@@ -13,7 +13,7 @@ Console.Configure.UseNewtonsoftJson();
 Console.Options.UseAnsi = false;
 Console.Options.LogLevel = LogLevel.Debug;
 
-var github = new GitHubClient(new ProductHeaderValue("GitHubMilestoneSync", "v1.0"))
+var github = new GitHubClient(new ProductHeaderValue("GitHubMilestoneSync", "v1.1"))
 {
     Credentials = new Credentials(Environment.GetEnvironmentVariable("GITHUB_TOKEN"))
 };
