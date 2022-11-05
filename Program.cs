@@ -34,60 +34,74 @@ foreach (var config in JsonSerializer.Deserialize<Config[]>(
             // Only gives us Open by default
             State = ItemStateFilter.All
         });
-        foreach (var mile in config.Milestones)
+        if (!config.ExcludeFromMilestoneSync?.Contains(repoName) ?? true)
         {
-            var match = milestones.FirstOrDefault(m => m.Title == mile.Title);
-            if (match != null)
+            foreach (var mile in config.Milestones)
             {
-                "Has".DumpDebug();
-                if (match.State.StringValue != mile.State ||
-                    match.Description != mile.Description)
+                var match = milestones.FirstOrDefault(m => m.Title == mile.Title);
+                if (match != null)
                 {
-                    "Differs, updating.".Dump();
-                    await github.Issue.Milestone.Update(repo.Id, match.Number, new MilestoneUpdate()
+                    "Has".DumpDebug();
+                    if (match.State.StringValue != mile.State ||
+                        match.Description != mile.Description)
+                    {
+                        "Differs, updating.".Dump();
+                        await github.Issue.Milestone.Update(repo.Id, match.Number, new MilestoneUpdate()
+                        {
+                            Description = mile.Description,
+                            State = StateFromString(mile.State)
+                        });
+                    }
+                }
+                else
+                {
+                    "Doesn't have, creating.".DumpDebug();
+                    await github.Issue.Milestone.Create(repo.Id, new NewMilestone(mile.Title)
                     {
                         Description = mile.Description,
                         State = StateFromString(mile.State)
                     });
                 }
             }
-            else
-            {
-                "Doesn't have, creating.".DumpDebug();
-                await github.Issue.Milestone.Create(repo.Id, new NewMilestone(mile.Title)
-                {
-                    Description = mile.Description,
-                    State = StateFromString(mile.State)
-                });
-            }
+        }
+        else
+        {
+            $"Repo {repoName} is excluded from milestone sync.".DumpDebug();
         }
 
         $"Labels for {repoName}".Dump();
         var labels = await github.Issue.Labels.GetAllForRepository(repo.Id);
-        foreach (var label in config.Labels)
+        if (!config.ExcludeFromLabelSync?.Contains(repoName) ?? true)
         {
-            var match = labels.FirstOrDefault(l => l.Name == label.Name);
-            if (match != null)
+            foreach (var label in config.Labels)
             {
-                "Has".DumpDebug();
-                if (match.Color != label.Color ||
-                    match.Description != label.Description)
+                var match = labels.FirstOrDefault(l => l.Name == label.Name);
+                if (match != null)
                 {
-                    "Differs, updating.".DumpDebug();
-                    await github.Issue.Labels.Update(repo.Id, label.Name, new LabelUpdate(label.Name, label.Color)
+                    "Has".DumpDebug();
+                    if (match.Color != label.Color ||
+                        match.Description != label.Description)
+                    {
+                        "Differs, updating.".DumpDebug();
+                        await github.Issue.Labels.Update(repo.Id, label.Name, new LabelUpdate(label.Name, label.Color)
+                        {
+                            Description = label.Description
+                        });
+                    }
+                }
+                else
+                {
+                    "Doesn't have, creating.".DumpDebug();
+                    await github.Issue.Labels.Create(repo.Id, new NewLabel(label.Name, label.Color)
                     {
                         Description = label.Description
                     });
                 }
             }
-            else
-            {
-                "Doesn't have, creating.".DumpDebug();
-                await github.Issue.Labels.Create(repo.Id, new NewLabel(label.Name, label.Color)
-                {
-                    Description = label.Description
-                });
-            }
+        }
+        else
+        {
+            $"Repo {repoName} is excluded from label sync.".DumpDebug();
         }
     }
 }
@@ -107,6 +121,8 @@ static ItemState StateFromString(string str)
 class Config
 {
     public string[] Repositories { get; set; }
+    public string[]? ExcludeFromLabelSync { get; set; }
+    public string[]? ExcludeFromMilestoneSync { get; set; }
     public Milestone[] Milestones { get; set; }
     public Label[] Labels { get; set; }
 }
